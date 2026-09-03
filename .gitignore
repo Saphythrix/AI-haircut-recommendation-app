@@ -37,3 +37,6 @@ __pycache__/
 .env
 .env.*
 !.env.example
+
+# Dataset
+haircut-recommender/data/
