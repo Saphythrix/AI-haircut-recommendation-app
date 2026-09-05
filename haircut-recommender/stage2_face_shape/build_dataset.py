@@ -18,9 +18,9 @@ except ImportError:
     from detect_landmarks import detect_landmarks
 
 try:
-    from stage2_face_shape.compute_ratios import compute_ratios
+    from stage2_face_shape.compute_features import compute_features, FEATURE_NAMES
 except ImportError:
-    from compute_ratios import compute_ratios
+    from compute_features import compute_features, FEATURE_NAMES
 
 CLASS_NAMES = ["Heart", "Oblong", "Oval", "Round", "Square"]
 
@@ -42,14 +42,8 @@ def build_feature_csv(dataset_folder, output_csv_path):
 
     with open(output_csv_path, mode="w", newline="") as csv_file:
         writer = csv.writer(csv_file)
-        # Header row
-        writer.writerow([
-            "length_to_width_ratio",
-            "jaw_to_cheekbone_ratio",
-            "forehead_to_cheekbone_ratio",
-            "jaw_to_forehead_ratio",
-            "label"
-        ])
+        # Header row — now 10 feature columns instead of 4
+        writer.writerow(FEATURE_NAMES + ["label"])
 
         for class_name in CLASS_NAMES:
             class_folder = os.path.join(dataset_folder, class_name)
@@ -77,13 +71,13 @@ def build_feature_csv(dataset_folder, output_csv_path):
                     class_skipped += 1
                     continue
 
-                ratios = compute_ratios(landmark_list)
-                if ratios is None:
+                features = compute_features(landmark_list)
+                if features is None:
                     skipped += 1
                     class_skipped += 1
                     continue
 
-                writer.writerow(ratios + [class_name])
+                writer.writerow(features + [class_name])
                 rows_written += 1
                 class_written += 1
 

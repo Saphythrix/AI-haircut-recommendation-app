@@ -20,6 +20,14 @@ for path in [project_root, current_dir]:
         sys.path.insert(0, path)
 
 try:
+    from stage2_face_shape.compute_features import FEATURE_NAMES
+except ImportError:
+    try:
+        from compute_features import FEATURE_NAMES
+    except ImportError:
+        FEATURE_NAMES = None
+
+try:
     from stage2_face_shape.model import FaceShapeMLP
 except ImportError:
     from model import FaceShapeMLP
@@ -35,12 +43,13 @@ if not os.path.exists(csv_path):
 
 df = pd.read_csv(csv_path)
 
-feature_columns = [
-    "length_to_width_ratio",
-    "jaw_to_cheekbone_ratio",
-    "forehead_to_cheekbone_ratio",
-    "jaw_to_forehead_ratio",
-]
+# Automatically detect feature columns (excluding 'label')
+if FEATURE_NAMES and all(col in df.columns for col in FEATURE_NAMES):
+    feature_columns = FEATURE_NAMES
+else:
+    feature_columns = [col for col in df.columns if col != "label"]
+
+print(f"Loaded dataset with {len(feature_columns)} features: {feature_columns}")
 
 X = df[feature_columns].values.astype(np.float32)
 y = df["label"].map(LABEL_TO_INDEX).values.astype(np.int64)
@@ -68,7 +77,7 @@ X_val_tensor = torch.tensor(X_val)
 y_val_tensor = torch.tensor(y_val)
 
 # ---------- 4. Build model, loss, optimizer, scheduler ----------
-model = FaceShapeMLP(input_size=4, hidden_size=32, num_classes=5)
+model = FaceShapeMLP(input_size=len(feature_columns), hidden_size=32, num_classes=5)
 loss_function = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.003)
 

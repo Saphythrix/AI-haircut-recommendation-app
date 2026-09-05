@@ -18,9 +18,12 @@ except ImportError:
     from detect_landmarks import detect_landmarks
 
 try:
-    from stage2_face_shape.compute_ratios import compute_ratios
+    from stage2_face_shape.compute_features import compute_features, FEATURE_NAMES
 except ImportError:
-    from compute_ratios import compute_ratios
+    try:
+        from compute_features import compute_features, FEATURE_NAMES
+    except ImportError:
+        from compute_ratios import compute_features, FEATURE_NAMES
 
 try:
     from stage2_face_shape.model import FaceShapeMLP
@@ -44,10 +47,10 @@ def predict_face_shape(image_path, verbose=True):
         return None
 
     landmark_list, _ = landmark_result
-    ratios = compute_ratios(landmark_list)
-    if ratios is None:
+    raw_features = compute_features(landmark_list)
+    if raw_features is None:
         if verbose:
-            print("Could not compute ratios for this image.")
+            print("Could not compute features for this image.")
         return None
 
     # Load normalization constants
@@ -62,13 +65,14 @@ def predict_face_shape(image_path, verbose=True):
 
     feature_mean = np.load(mean_file)
     feature_std = np.load(std_file)
+    num_features = len(feature_mean)
 
     # Normalize features and prepare tensor batch
-    features = (np.array(ratios, dtype=np.float32) - feature_mean) / feature_std
-    features_tensor = torch.tensor(features).unsqueeze(0)  # Shape: (1, 4)
+    features = (np.array(raw_features[:num_features], dtype=np.float32) - feature_mean) / feature_std
+    features_tensor = torch.tensor(features).unsqueeze(0)  # Shape: (1, num_features)
 
     # Load model architecture matching trained weights
-    model = FaceShapeMLP(input_size=4, hidden_size=32, num_classes=5)
+    model = FaceShapeMLP(input_size=num_features, hidden_size=32, num_classes=5)
     model.load_state_dict(torch.load(model_file, weights_only=True))
     model.eval()
 
@@ -93,7 +97,8 @@ def predict_face_shape(image_path, verbose=True):
         "probabilities": {
             name: probabilities[0][i].item() for i, name in enumerate(CLASS_NAMES)
         },
-        "ratios": ratios,
+        "features": raw_features,
+        "ratios": raw_features[:4],
     }
 
 

@@ -12,7 +12,7 @@ class FaceShapeMLP(nn.Module):
       - Output Layer -> Linear(hidden_size, num_classes) (raw logits)
     """
     
-    def __init__(self, input_size=4, hidden_size=32, num_classes=5, dropout_rate=0.1):
+    def __init__(self, input_size=10, hidden_size=32, num_classes=5, dropout_rate=0.1):
         super().__init__()
         self.fc1 = nn.Linear(input_size, hidden_size)
         self.fc2 = nn.Linear(hidden_size, hidden_size // 2)
@@ -28,19 +28,19 @@ class FaceShapeMLP(nn.Module):
         """
         x = self.fc1(x)
         x = self.relu(x)
-        x=self.dropout(x)
+        x = self.dropout(x)
         x = self.fc2(x)
         x = self.relu(x)
-        x=self.dropout(x)
+        x = self.dropout(x)
         x = self.fc3(x)
         x = self.relu(x)
-        x=self.dropout(x)
+        x = self.dropout(x)
         x = self.fc4(x)
         return x
 
 
 if __name__ == "__main__":
-    model = FaceShapeMLP(input_size=4, hidden_size=32, num_classes=5)
-    dummy_input = torch.randn(1, 4)   # simulate one sample with 4 features
+    model = FaceShapeMLP(input_size=10, hidden_size=32, num_classes=5)
+    dummy_input = torch.randn(1, 10)   # simulate one sample with 10 features
     output = model(dummy_input)
     print(output.shape)   # should print: torch.Size([1, 5])
